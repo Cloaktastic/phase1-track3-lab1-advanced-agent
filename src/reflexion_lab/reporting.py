@@ -17,10 +17,13 @@ def summarize(records: list[RunRecord]) -> dict:
     return summary
 
 def failure_breakdown(records: list[RunRecord]) -> dict:
-    grouped: dict[str, Counter] = defaultdict(Counter)
-    for record in records:
-        grouped[record.agent_type][record.failure_mode] += 1
-    return {agent: dict(counter) for agent, counter in grouped.items()}
+    modes = ["entity_drift", "incomplete_multi_hop", "wrong_final_answer", "looping", "reflection_overfit", "none"]
+    breakdown = {}
+    for m in modes:
+        react_count = sum(1 for r in records if r.agent_type == "react" and r.failure_mode == m)
+        reflexion_count = sum(1 for r in records if r.agent_type == "reflexion" and r.failure_mode == m)
+        breakdown[m] = {"react": react_count, "reflexion": reflexion_count}
+    return breakdown
 
 def build_report(records: list[RunRecord], dataset_name: str, mode: str = "mock") -> ReportPayload:
     examples = [{"qid": r.qid, "agent_type": r.agent_type, "gold_answer": r.gold_answer, "predicted_answer": r.predicted_answer, "is_correct": r.is_correct, "attempts": r.attempts, "failure_mode": r.failure_mode, "reflection_count": len(r.reflections)} for r in records]
